@@ -1,10 +1,9 @@
 use bytes::Bytes;
 use bytes::BytesMut;
+use rand::prelude::*;
+use rand::thread_rng;
 use structure::{structure, structure_impl};
 use thiserror::Error;
-use rand::thread_rng;
-use rand::prelude::*;
-
 
 pub type Int = u16;
 
@@ -15,7 +14,7 @@ pub struct DNSHeader {
     pub num_questions: Int,
     pub num_answers: Int,
     pub num_authorities: Int,
-    pub num_additionals: Int
+    pub num_additionals: Int,
 }
 
 pub trait ToBytes {
@@ -24,20 +23,18 @@ pub trait ToBytes {
 
 impl ToBytes for DNSHeader {
     fn to_bytes(&self) -> Result<Bytes, Box<dyn std::error::Error>> {
-        Ok(
-            Bytes::from(
-                structure!("HHHHHH")
+        Ok(Bytes::from(
+            structure!("HHHHHH")
                 .pack(
                     self.id,
                     self.flags as Int,
                     self.num_questions,
                     self.num_answers,
                     self.num_authorities,
-                    self.num_additionals
+                    self.num_additionals,
                 )
-                .unwrap()
-            )
-        )
+                .unwrap(),
+        ))
     }
 }
 
@@ -58,38 +55,38 @@ pub enum DNSRecordClass {
     IN = 1,
     CS = 2,
     CH = 3,
-    HS = 4
+    HS = 4,
 }
-
 
 #[derive(Error, Debug)]
 pub enum DNSError<'a> {
     #[error("Found a part with more than 255 chars in the url. (part: {part}, domain_name: {domain_name})")]
-    DomainNameHasTooLongPart {
-        part: &'a str,
-        domain_name: &'a str
-    }
+    DomainNameHasTooLongPart { part: &'a str, domain_name: &'a str },
 }
-
-
-
 
 #[derive(Debug, Clone)]
 pub struct DNSQuestion {
     pub name: bytes::Bytes,
     pub r#type: DNSRecordType,
-    pub class: DNSRecordClass
+    pub class: DNSRecordClass,
 }
 
 impl DNSQuestion {
-    pub fn new(domain_name: &str, r#type: DNSRecordType, class: DNSRecordClass) -> Result<Self, DNSError<'_>> {
+    pub fn new(
+        domain_name: &str,
+        r#type: DNSRecordType,
+        class: DNSRecordClass,
+    ) -> Result<Self, DNSError<'_>> {
         match encode::dns_name(domain_name) {
-            Ok(encoded) => Ok(Self {name: encoded, r#type, class}),
-            Err(err) => Err(err)
+            Ok(encoded) => Ok(Self {
+                name: encoded,
+                r#type,
+                class,
+            }),
+            Err(err) => Err(err),
         }
     }
 }
-
 
 impl ToBytes for DNSQuestion {
     fn to_bytes(&self) -> Result<Bytes, Box<dyn std::error::Error>> {
@@ -97,25 +94,17 @@ impl ToBytes for DNSQuestion {
         result.extend(self.name.iter());
 
         let s = structure!("HH");
-        let packed =
-        s.pack(
-            self.r#type as u16,
-            self.class as u16
-        )
-        .unwrap();
+        let packed = s.pack(self.r#type as u16, self.class as u16).unwrap();
         result.extend_from_slice(&packed);
         Ok(Bytes::from(result))
     }
 }
 
-
 #[derive(Debug, Clone)]
 pub struct DNSQuery {
     header: DNSHeader,
-    question: DNSQuestion
+    question: DNSQuestion,
 }
-
-
 
 impl ToBytes for DNSQuery {
     fn to_bytes(&self) -> Result<Bytes, Box<dyn std::error::Error>> {
@@ -126,21 +115,17 @@ impl ToBytes for DNSQuery {
     }
 }
 
-
-
-
 #[derive(Debug, Clone, Copy)]
 pub enum DNSHeaderFlag {
     RecursionDesired = 1 << 8,
-    None = 0
+    None = 0,
 }
-
 
 impl DNSQuery {
     pub fn new(
-        domain_name: &str, 
+        domain_name: &str,
         record_type: DNSRecordType,
-        record_class: DNSRecordClass
+        record_class: DNSRecordClass,
     ) -> Result<Self, DNSError> {
         match DNSQuestion::new(domain_name, record_type, record_class) {
             Ok(question) => {
@@ -153,23 +138,25 @@ impl DNSQuery {
                         flags: DNSHeaderFlag::RecursionDesired,
                         num_additionals: 0,
                         num_answers: 0,
-                        num_authorities: 0
-                    }
+                        num_authorities: 0,
+                    },
                 })
-            },
-            Err(err) => Err(err)
+            }
+            Err(err) => Err(err),
         }
     }
 
     #[cfg(test)]
     pub fn send_to_8_8_8_8(&self) -> Result<Bytes, Box<dyn std::error::Error>> {
-        use std::net::{UdpSocket, SocketAddr};
+        use std::net::{SocketAddr, UdpSocket};
 
         let data = self.to_bytes()?.to_vec();
         let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
         let recipient = "8.8.8.8:53".parse::<SocketAddr>().unwrap();
-        
-        socket.send_to(&data, recipient).expect("to send to 8.8.8.8:53");
+
+        socket
+            .send_to(&data, recipient)
+            .expect("to send to 8.8.8.8:53");
 
         let mut recv_buf = [0; 1024];
         let (size, _) = socket.recv_from(&mut recv_buf).unwrap();
@@ -178,7 +165,6 @@ impl DNSQuery {
         Ok(Bytes::from(observed))
     }
 }
-
 
 mod encode {
     use super::DNSError;
@@ -191,7 +177,7 @@ mod encode {
             let part_as_bytes = part.as_bytes();
             let len = part_as_bytes.len();
             if len > 255 {
-                return Err(DNSError::DomainNameHasTooLongPart { part, domain_name })
+                return Err(DNSError::DomainNameHasTooLongPart { part, domain_name });
             }
             let len = len as u8;
 
@@ -204,16 +190,10 @@ mod encode {
     }
 }
 
-
-
-
-
-
 #[cfg(test)]
 mod tests {
 
     use super::*;
-    
 
     #[test]
     fn test_header_to_bytes() {
@@ -223,7 +203,7 @@ mod tests {
             num_questions: 1,
             num_additionals: 0,
             num_authorities: 0,
-            num_answers: 0
+            num_answers: 0,
         };
         let observed = header.to_bytes().unwrap();
         let expected = b"\x13\x14\0\0\0\x01\0\0\0\0\0\0";
@@ -242,19 +222,19 @@ mod tests {
         let question = DNSQuestion {
             name: encode::dns_name("google.com").unwrap(),
             r#type: DNSRecordType::A,
-            class: DNSRecordClass::IN
+            class: DNSRecordClass::IN,
         };
 
         let observed = question.to_bytes().unwrap();
         let expected = Bytes::from_static(b"\x06google\x03com\0\0\x01\0\x01");
         assert_eq!(observed, expected);
         // let expected = Bytes::from(b"a");
-
     }
 
     #[test]
     fn test_dns_question_new() {
-        let question = DNSQuestion::new("google.com", DNSRecordType::A, DNSRecordClass::IN).unwrap();
+        let question =
+            DNSQuestion::new("google.com", DNSRecordType::A, DNSRecordClass::IN).unwrap();
         let observed = question.to_bytes().unwrap();
         let expected = Bytes::from_static(b"\x06google\x03com\0\0\x01\0\x01");
         assert_eq!(observed, expected);
@@ -265,13 +245,12 @@ mod tests {
         let query = DNSQuery::new("example.com", DNSRecordType::A, DNSRecordClass::IN).unwrap();
 
         let observed = query.to_bytes().unwrap();
-        // except for the random id in the first two bytes, 
+        // except for the random id in the first two bytes,
         // everything should be fixed.
-        let expected_tail = Bytes::from_static(b"\x01\0\0\x01\0\0\0\0\0\0\x07example\x03com\0\0\x01\0\x01");
+        let expected_tail =
+            Bytes::from_static(b"\x01\0\0\x01\0\0\0\0\0\0\x07example\x03com\0\0\x01\0\x01");
         assert!(observed.ends_with(&expected_tail));
-
     }
-
 
     #[test]
     fn test_dns_query_roundtrip() {

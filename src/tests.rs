@@ -39,8 +39,7 @@ fn test_dns_question_to_bytes() {
 
 #[test]
 fn test_dns_question_new() {
-    let question =
-        DNSQuestion::new("google.com", DNSRecordType::A, DNSRecordClass::IN).unwrap();
+    let question = DNSQuestion::new("google.com", DNSRecordType::A, DNSRecordClass::IN).unwrap();
     let observed = question.to_bytes().unwrap();
     let expected = Bytes::from_static(b"\x06google\x03com\0\0\x01\0\x01");
     assert_eq!(observed, expected);

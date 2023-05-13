@@ -82,7 +82,7 @@ pub struct DNSQuestion {
 }
 
 impl DNSQuestion {
-    pub fn new<'a>(domain_name: &'a str, r#type: DNSRecordType, class: DNSRecordClass) -> Result<Self, DNSError<'a>> {
+    pub fn new(domain_name: &str, r#type: DNSRecordType, class: DNSRecordClass) -> Result<Self, DNSError<'_>> {
         match encode::dns_name(domain_name) {
             Ok(encoded) => Ok(Self {name: encoded, r#type, class}),
             Err(err) => Err(err)
@@ -137,8 +137,8 @@ pub enum DNSHeaderFlag {
 
 
 impl DNSQuery {
-    pub fn new<'a>(
-        domain_name: &'a str, 
+    pub fn new(
+        domain_name: &str, 
         record_type: DNSRecordType,
         record_class: DNSRecordClass
     ) -> Result<Self, DNSError> {
@@ -174,7 +174,7 @@ impl DNSQuery {
         let mut recv_buf = [0; 1024];
         let (size, _) = socket.recv_from(&mut recv_buf).unwrap();
 
-        let observed = (&recv_buf[0..size]).to_vec();
+        let observed = recv_buf[0..size].to_vec();
         Ok(Bytes::from(observed))
     }
 }
@@ -196,11 +196,11 @@ mod encode {
             let len = len as u8;
 
             encoded.push(len);
-            encoded.extend_from_slice(&part_as_bytes);
+            encoded.extend_from_slice(part_as_bytes);
         }
         encoded.push(0);
 
-        return Ok(Bytes::from(encoded))
+        Ok(Bytes::from(encoded))
     }
 }
 
@@ -213,7 +213,7 @@ mod encode {
 mod tests {
 
     use super::*;
-    use structure::{structure_impl, structure};
+    
 
     #[test]
     fn test_header_to_bytes() {
@@ -268,7 +268,7 @@ mod tests {
         // except for the random id in the first two bytes, 
         // everything should be fixed.
         let expected_tail = Bytes::from_static(b"\x01\0\0\x01\0\0\0\0\0\0\x07example\x03com\0\0\x01\0\x01");
-        assert!(observed.ends_with(&expected_tail.to_vec()));
+        assert!(observed.ends_with(&expected_tail));
 
     }
 

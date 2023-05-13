@@ -292,20 +292,22 @@ pub struct DNSPacket {
 
 impl DNSPacket {
     pub fn ip(&self) -> Option<String> {
-        self
-        .answers
-        .iter()
-        .find_map(
-            |answer| 
+        self.answers.iter().find_map(|answer| {
             if answer.r#type == DNSRecordType::A {
-                Some(answer.data.iter().map(|x| format!("{x}")).collect::<Vec<_>>().join("."))
+                Some(
+                    answer
+                        .data
+                        .iter()
+                        .map(|x| format!("{x}"))
+                        .collect::<Vec<_>>()
+                        .join("."),
+                )
             } else {
                 None
             }
-        )
+        })
     }
 }
-
 
 impl FromBytes for DNSPacket {
     type Error = DNSError;

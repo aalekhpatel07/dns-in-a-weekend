@@ -184,7 +184,6 @@ fn test_parse_dns_packet() {
     assert_eq!(packet.ip(), Some("93.184.216.34".to_string()));
 }
 
-
 #[test]
 fn test_parse_dns_packet_metafilter() {
     let query = DNSQuery::new("www.metafilter.com", DNSRecordType::A, DNSRecordClass::IN);
@@ -221,8 +220,6 @@ fn test_parse_dns_packet_metafilter() {
 
     assert_eq!(packet.ip(), Some("54.203.56.158".to_string()));
 }
-
-
 
 #[test_case("www.metafilter.com", "54.203.56.158"; "another broken one?")]
 #[test_case("www.example.com", "93.184.216.34"; "check example.com")]

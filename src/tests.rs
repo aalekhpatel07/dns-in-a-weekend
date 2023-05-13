@@ -1,6 +1,6 @@
 use crate::*;
-use std::io::{Cursor, Read};
-use test_case::{case, test_case};
+use std::io::{Cursor};
+use test_case::{test_case};
 
 #[test]
 fn test_header_serde() {

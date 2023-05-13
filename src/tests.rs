@@ -172,10 +172,7 @@ fn test_parse_dns_packet() {
     assert_eq!(packet.answers[0].class, DNSRecordClass::IN);
     assert_eq!(packet.answers[0].r#type, DNSRecordType::A);
     assert_eq!(packet.answers[0].name, "www.example.com".to_string());
-    assert_eq!(
-        packet.answers[0].data,
-        b"]\xb8\xd8\"".to_vec()
-    );
+    assert_eq!(packet.answers[0].data, b"]\xb8\xd8\"".to_vec());
 
     let header = packet.header;
     assert_eq!(header.flags, DNSHeaderFlag::Other(33152));

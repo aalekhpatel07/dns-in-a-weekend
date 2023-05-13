@@ -142,7 +142,7 @@ fn test_dns_record_parsing() {
             r#type: DNSRecordType::A,
             class: DNSRecordClass::IN,
             ttl: 21147,
-            data: bytes::Bytes::from_static(b"]\xb8\xd8\"")
+            data: b"]\xb8\xd8\"".to_vec()
         }
     );
 }
@@ -174,7 +174,7 @@ fn test_parse_dns_packet() {
     assert_eq!(packet.answers[0].name, "www.example.com".to_string());
     assert_eq!(
         packet.answers[0].data,
-        bytes::Bytes::from_static(b"]\xb8\xd8\"")
+        b"]\xb8\xd8\"".to_vec()
     );
 
     let header = packet.header;

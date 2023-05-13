@@ -4,7 +4,6 @@ use std::net::AddrParseError;
 use std::num::TryFromIntError;
 use std::string::FromUtf8Error;
 
-use bytes::Bytes;
 use rand::prelude::*;
 use rand::thread_rng;
 use structure::byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
@@ -201,7 +200,7 @@ impl DNSQuery {
     }
 
     #[cfg(test)]
-    pub fn send_to_8_8_8_8(&self) -> Result<Bytes, DNSError> {
+    pub fn send_to_8_8_8_8(&self) -> Result<Vec<u8>, DNSError> {
         use std::net::{SocketAddr, UdpSocket};
 
         let mut contents = vec![];
@@ -215,7 +214,7 @@ impl DNSQuery {
         let (size, _) = socket.recv_from(&mut recv_buf)?;
 
         let observed = recv_buf[0..size].to_vec();
-        Ok(Bytes::from(observed))
+        Ok(observed)
     }
 }
 
@@ -225,7 +224,7 @@ pub struct DNSRecord {
     pub r#type: DNSRecordType,
     pub class: DNSRecordClass,
     pub ttl: u32,
-    pub data: Bytes,
+    pub data: Vec<u8>,
 }
 
 impl FromBytes for DNSHeader {
@@ -277,7 +276,7 @@ impl FromBytes for DNSRecord {
             r#type,
             class,
             ttl,
-            data: Bytes::from(buf),
+            data: buf,
         })
     }
 }

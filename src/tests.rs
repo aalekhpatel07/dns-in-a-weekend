@@ -181,11 +181,51 @@ fn test_parse_dns_packet() {
     assert_eq!(header.num_authorities, 0);
     assert_eq!(header.num_additionals, 0);
 
-    assert_eq!(packet.answers[0].ip(), Some("93.184.216.34".to_string()));
+    assert_eq!(packet.ip(), Some("93.184.216.34".to_string()));
 }
 
+
+#[test]
+fn test_parse_dns_packet_metafilter() {
+    let query = DNSQuery::new("www.metafilter.com", DNSRecordType::A, DNSRecordClass::IN);
+    let response = query.send_to_8_8_8_8().unwrap();
+
+    let mut cursor = Cursor::new(&response[..]);
+    let packet = DNSPacket::from_bytes(&mut cursor).unwrap();
+
+    assert_eq!(packet.additionals.len(), 0);
+    assert_eq!(packet.authorities.len(), 0);
+    assert_eq!(packet.questions.len(), 1);
+    assert_eq!(packet.answers.len(), 2);
+
+    assert_eq!(
+        packet.questions[0],
+        DNSQuestion {
+            name: "www.metafilter.com".into(),
+            r#type: DNSRecordType::A,
+            class: DNSRecordClass::IN
+        }
+    );
+
+    assert_eq!(packet.answers[0].class, DNSRecordClass::IN);
+    assert_eq!(packet.answers[0].r#type, DNSRecordType::CNAME);
+    assert_eq!(packet.answers[0].name, "www.metafilter.com".to_string());
+    assert_eq!(packet.answers[1].data, [54, 203, 56, 158]);
+
+    let header = packet.header;
+    assert_eq!(header.flags, DNSHeaderFlag::Other(33152));
+    assert_eq!(header.num_questions, 1);
+    assert_eq!(header.num_answers, 2);
+    assert_eq!(header.num_authorities, 0);
+    assert_eq!(header.num_additionals, 0);
+
+    assert_eq!(packet.ip(), Some("54.203.56.158".to_string()));
+}
+
+
+
+#[test_case("www.metafilter.com", "54.203.56.158"; "another broken one?")]
 #[test_case("www.example.com", "93.184.216.34"; "check example.com")]
-#[test_case("www.facebook.com", "9.115.116.97.114.45.109.105.110.105.4.99.49.48.114.192.16"; "check facebook.com")]
 fn test_lookup_domain(domain_name: &str, expected: &str) {
     let observed = lookup_domain(domain_name).unwrap();
     assert_eq!(observed, expected.to_string());

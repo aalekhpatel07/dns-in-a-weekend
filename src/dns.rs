@@ -281,18 +281,6 @@ impl FromBytes for DNSRecord {
     }
 }
 
-impl DNSRecord {
-    #[inline(always)]
-    pub fn ip(&self) -> Option<String> {
-        let octets = self
-            .data
-            .iter()
-            .map(|&x| format!("{x}"))
-            .collect::<Vec<String>>();
-        Some(octets.join("."))
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct DNSPacket {
     pub header: DNSHeader,
@@ -301,6 +289,23 @@ pub struct DNSPacket {
     pub authorities: Vec<DNSRecord>,
     pub additionals: Vec<DNSRecord>,
 }
+
+impl DNSPacket {
+    pub fn ip(&self) -> Option<String> {
+        self
+        .answers
+        .iter()
+        .find_map(
+            |answer| 
+            if answer.r#type == DNSRecordType::A {
+                Some(answer.data.iter().map(|x| format!("{x}")).collect::<Vec<_>>().join("."))
+            } else {
+                None
+            }
+        )
+    }
+}
+
 
 impl FromBytes for DNSPacket {
     type Error = DNSError;
@@ -339,7 +344,7 @@ pub fn lookup_domain(domain_name: &str) -> Result<String, DNSError> {
     let response = query.send_to_8_8_8_8()?;
     let mut reader = std::io::Cursor::new(response);
     let packet = DNSPacket::from_bytes(&mut reader)?;
-    packet.answers[0].ip().ok_or(DNSError::NoIpAddressFound)
+    packet.ip().ok_or(DNSError::NoIpAddressFound)
 }
 
 pub mod encode {

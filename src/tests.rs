@@ -1,6 +1,6 @@
 use crate::*;
-use std::io::{Cursor};
-use test_case::{test_case};
+use std::io::Cursor;
+use test_case::test_case;
 
 #[test]
 fn test_header_serde() {
@@ -21,7 +21,6 @@ fn test_header_serde() {
     let mut cursor = Cursor::new(observed);
     let deserialized = DNSHeader::from_bytes(&mut cursor).unwrap();
     assert_eq!(deserialized, header);
-
 }
 
 #[test]
@@ -39,11 +38,7 @@ fn test_encode_and_decode_dns_name() {
 
 #[test]
 fn test_dns_question_serde() {
-    let question = DNSQuestion::new(
-        "google.com",
-        DNSRecordType::A,
-        DNSRecordClass::IN,
-    );
+    let question = DNSQuestion::new("google.com", DNSRecordType::A, DNSRecordClass::IN);
 
     let mut writer = vec![];
     question.to_bytes(&mut writer).unwrap();
@@ -53,16 +48,11 @@ fn test_dns_question_serde() {
     let mut cursor = Cursor::new(expected);
     let deserialized = DNSQuestion::from_bytes(&mut cursor).unwrap();
     assert_eq!(deserialized, question);
-
 }
 
 #[test]
 fn test_dns_query_new() {
-    let query = DNSQuery::new(
-        "example.com", 
-        DNSRecordType::A, 
-        DNSRecordClass::IN
-    );
+    let query = DNSQuery::new("example.com", DNSRecordType::A, DNSRecordClass::IN);
 
     let mut observed = vec![];
 
@@ -89,7 +79,6 @@ fn test_dns_query_roundtrip() {
 
 #[test]
 fn test_dns_query_record_parsing_roundtrip() {
-
     let query = DNSQuery::new("www.example.com", DNSRecordType::A, DNSRecordClass::IN);
     let response = query.send_to_8_8_8_8().unwrap();
     assert!(response.ends_with(&[93, 184, 216, 34]));
@@ -114,34 +103,30 @@ fn test_dns_name_simple() {
     assert_eq!(header.flags, DNSHeaderFlag::Other(33152));
     assert_eq!(header.num_questions, 1);
     assert_eq!(header.num_answers, 1);
-
 }
-
 
 #[test]
 fn test_dns_record_parsing() {
     let response = vec![
-        96, 86, 129, 128, 
-        0, 1, 0, 1, 0, 0, 0, 0, 
-        3, 119, 119, 119, 7, 101, 120, 97, 
-        109, 112, 108, 101, 3, 99, 111, 109, 
-        0, 0, 1, 0, 1, 192, 12, 0, 
-        1, 0, 1, 0, 0, 82, 155, 0, 
-        4, 93, 184, 216, 
-        34
+        96, 86, 129, 128, 0, 1, 0, 1, 0, 0, 0, 0, 3, 119, 119, 119, 7, 101, 120, 97, 109, 112, 108,
+        101, 3, 99, 111, 109, 0, 0, 1, 0, 1, 192, 12, 0, 1, 0, 1, 0, 0, 82, 155, 0, 4, 93, 184,
+        216, 34,
     ];
 
     let mut cursor = Cursor::new(&response[..]);
-    
+
     let header = DNSHeader::from_bytes(&mut cursor).unwrap();
     let question = DNSQuestion::from_bytes(&mut cursor).unwrap();
 
     assert_eq!(cursor.position(), 33);
-    assert_eq!(question, DNSQuestion {
-        name: "www.example.com".into(),
-        r#type: DNSRecordType::A,
-        class: DNSRecordClass::IN
-    });
+    assert_eq!(
+        question,
+        DNSQuestion {
+            name: "www.example.com".into(),
+            r#type: DNSRecordType::A,
+            class: DNSRecordClass::IN
+        }
+    );
     assert_eq!(header.flags, DNSHeaderFlag::Other(33152));
     assert_eq!(header.num_questions, 1);
     assert_eq!(header.num_answers, 1);
@@ -150,19 +135,20 @@ fn test_dns_record_parsing() {
 
     let record = DNSRecord::from_bytes(&mut cursor).unwrap();
 
-    assert_eq!(record, DNSRecord {
-        name: "www.example.com".into(),
-        r#type: DNSRecordType::A,
-        class: DNSRecordClass::IN,
-        ttl: 21147,
-        data: bytes::Bytes::from_static(b"]\xb8\xd8\"")
-    });
+    assert_eq!(
+        record,
+        DNSRecord {
+            name: "www.example.com".into(),
+            r#type: DNSRecordType::A,
+            class: DNSRecordClass::IN,
+            ttl: 21147,
+            data: bytes::Bytes::from_static(b"]\xb8\xd8\"")
+        }
+    );
 }
-
 
 #[test]
 fn test_parse_dns_packet() {
-
     let query = DNSQuery::new("www.example.com", DNSRecordType::A, DNSRecordClass::IN);
     let response = query.send_to_8_8_8_8().unwrap();
 
@@ -174,17 +160,22 @@ fn test_parse_dns_packet() {
     assert_eq!(packet.questions.len(), 1);
     assert_eq!(packet.answers.len(), 1);
 
-
-    assert_eq!(packet.questions[0], DNSQuestion {
-        name: "www.example.com".into(),
-        r#type: DNSRecordType::A,
-        class: DNSRecordClass::IN
-    }); 
+    assert_eq!(
+        packet.questions[0],
+        DNSQuestion {
+            name: "www.example.com".into(),
+            r#type: DNSRecordType::A,
+            class: DNSRecordClass::IN
+        }
+    );
 
     assert_eq!(packet.answers[0].class, DNSRecordClass::IN);
     assert_eq!(packet.answers[0].r#type, DNSRecordType::A);
     assert_eq!(packet.answers[0].name, "www.example.com".to_string());
-    assert_eq!(packet.answers[0].data, bytes::Bytes::from_static(b"]\xb8\xd8\""));
+    assert_eq!(
+        packet.answers[0].data,
+        bytes::Bytes::from_static(b"]\xb8\xd8\"")
+    );
 
     let header = packet.header;
     assert_eq!(header.flags, DNSHeaderFlag::Other(33152));
@@ -195,7 +186,6 @@ fn test_parse_dns_packet() {
 
     assert_eq!(packet.answers[0].ip(), Some("93.184.216.34".to_string()));
 }
-
 
 #[test_case("www.example.com", "93.184.216.34"; "check example.com")]
 #[test_case("www.facebook.com", "9.115.116.97.114.45.109.105.110.105.4.99.49.48.114.192.16"; "check facebook.com")]

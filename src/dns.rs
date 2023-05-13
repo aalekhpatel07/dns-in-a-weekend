@@ -7,11 +7,7 @@ use std::string::FromUtf8Error;
 use bytes::Bytes;
 use rand::prelude::*;
 use rand::thread_rng;
-use structure::byteorder::{
-    BigEndian,
-    ReadBytesExt,
-    WriteBytesExt
-};
+use structure::byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use thiserror::Error;
 
 pub type Int = u16;
@@ -37,7 +33,6 @@ pub trait FromBytes: Sized {
 
 impl ToBytes for DNSHeader {
     fn to_bytes<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, DNSError> {
-
         writer.write_u16::<BigEndian>(self.id)?;
         writer.write_u16::<BigEndian>(self.flags.into())?;
         writer.write_u16::<BigEndian>(self.num_questions)?;
@@ -66,11 +61,10 @@ impl TryFrom<Int> for DNSRecordType {
         match value {
             1 => Ok(Self::A),
             5 => Ok(Self::CNAME),
-            _ => Err(DNSError::BadRecordType(value))
+            _ => Err(DNSError::BadRecordType(value)),
         }
     }
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DNSRecordClass {
@@ -88,11 +82,10 @@ impl TryFrom<Int> for DNSRecordClass {
             2 => Ok(Self::CS),
             3 => Ok(Self::CH),
             4 => Ok(Self::HS),
-            _ => Err(DNSError::BadRecordClass(value))
+            _ => Err(DNSError::BadRecordClass(value)),
         }
     }
 }
-
 
 #[derive(Error, Debug)]
 pub enum DNSError {
@@ -113,7 +106,7 @@ pub enum DNSError {
     #[error(transparent)]
     BadAddress(#[from] AddrParseError),
     #[error("Couldn't find an ip address in the answer section.")]
-    NoIpAddressFound
+    NoIpAddressFound,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -124,15 +117,11 @@ pub struct DNSQuestion {
 }
 
 impl DNSQuestion {
-    pub fn new(
-        domain_name: &str,
-        r#type: DNSRecordType,
-        class: DNSRecordClass,
-    ) -> Self {
+    pub fn new(domain_name: &str, r#type: DNSRecordType, class: DNSRecordClass) -> Self {
         Self {
             name: domain_name.to_string(),
             r#type,
-            class
+            class,
         }
     }
 }
@@ -167,27 +156,25 @@ impl ToBytes for DNSQuery {
 pub enum DNSHeaderFlag {
     RecursionDesired,
     None,
-    Other(Int)
+    Other(Int),
 }
-
 
 impl From<DNSHeaderFlag> for Int {
     fn from(value: DNSHeaderFlag) -> Self {
         match value {
             DNSHeaderFlag::None => 0,
             DNSHeaderFlag::RecursionDesired => 1 << 8,
-            DNSHeaderFlag::Other(v) => v
+            DNSHeaderFlag::Other(v) => v,
         }
     }
 }
-
 
 impl From<Int> for DNSHeaderFlag {
     fn from(value: Int) -> Self {
         match value {
             0 => Self::None,
             256 => Self::RecursionDesired,
-            _ => Self::Other(value)
+            _ => Self::Other(value),
         }
     }
 }
@@ -238,19 +225,19 @@ pub struct DNSRecord {
     pub r#type: DNSRecordType,
     pub class: DNSRecordClass,
     pub ttl: u32,
-    pub data: Bytes
+    pub data: Bytes,
 }
 
 impl FromBytes for DNSHeader {
     type Error = DNSError;
     fn from_bytes<R: Read>(data: &mut R) -> Result<Self, Self::Error> {
-        Ok( Self {
+        Ok(Self {
             id: data.read_u16::<BigEndian>()?,
             flags: data.read_u16::<BigEndian>()?.into(),
             num_questions: data.read_u16::<BigEndian>()?,
             num_answers: data.read_u16::<BigEndian>()?,
             num_additionals: data.read_u16::<BigEndian>()?,
-            num_authorities: data.read_u16::<BigEndian>()?
+            num_authorities: data.read_u16::<BigEndian>()?,
         })
     }
 }
@@ -258,7 +245,6 @@ impl FromBytes for DNSHeader {
 impl FromBytes for DNSQuestion {
     type Error = DNSError;
     fn from_bytes<R: Read + Seek>(reader: &mut R) -> Result<Self, Self::Error> {
-
         match decode::dns_name_simple(reader) {
             Ok((domain_name, _)) => {
                 let r#type = reader.read_u16::<BigEndian>()?;
@@ -266,21 +252,17 @@ impl FromBytes for DNSQuestion {
                 Ok(Self {
                     name: domain_name,
                     r#type: r#type.try_into()?,
-                    class: class.try_into()?
+                    class: class.try_into()?,
                 })
-            },
-            Err(err) => {
-                Err(err)
             }
+            Err(err) => Err(err),
         }
     }
 }
 
-
 impl FromBytes for DNSRecord {
     type Error = DNSError;
     fn from_bytes<R: Read + Seek>(reader: &mut R) -> Result<Self, Self::Error> {
-        
         let (domain_name, _) = decode::dns_name(reader)?;
 
         let r#type = reader.read_u16::<BigEndian>()?.try_into()?;
@@ -295,16 +277,19 @@ impl FromBytes for DNSRecord {
             r#type,
             class,
             ttl,
-            data: Bytes::from(buf)
+            data: Bytes::from(buf),
         })
     }
 }
 
 impl DNSRecord {
-
     #[inline(always)]
     pub fn ip(&self) -> Option<String> {
-        let octets = self.data.iter().map(|&x| format!("{x}")).collect::<Vec<String>>();
+        let octets = self
+            .data
+            .iter()
+            .map(|&x| format!("{x}"))
+            .collect::<Vec<String>>();
         Some(octets.join("."))
     }
 }
@@ -315,53 +300,39 @@ pub struct DNSPacket {
     pub questions: Vec<DNSQuestion>,
     pub answers: Vec<DNSRecord>,
     pub authorities: Vec<DNSRecord>,
-    pub additionals: Vec<DNSRecord>
+    pub additionals: Vec<DNSRecord>,
 }
-
 
 impl FromBytes for DNSPacket {
     type Error = DNSError;
     fn from_bytes<R: Read + Seek>(data: &mut R) -> Result<Self, Self::Error> {
         let header = DNSHeader::from_bytes(data)?;
-        
-        let questions =
-        (0..header.num_questions)
-        .map(|_| {
-            DNSQuestion::from_bytes(data)
-        })
-        .collect::<Result<Vec<DNSQuestion>, DNSError>>()?;
-        
-        let answers =
-        (0..header.num_answers)
-        .map(|_| {
-            DNSRecord::from_bytes(data)
-        })
-        .collect::<Result<Vec<DNSRecord>, DNSError>>()?;
 
-        let authorities =
-        (0..header.num_authorities)
-        .map(|_| {
-            DNSRecord::from_bytes(data)
-        })
-        .collect::<Result<Vec<DNSRecord>, DNSError>>()?;
+        let questions = (0..header.num_questions)
+            .map(|_| DNSQuestion::from_bytes(data))
+            .collect::<Result<Vec<DNSQuestion>, DNSError>>()?;
 
-        let additionals =
-        (0..header.num_additionals)
-        .map(|_| {
-            DNSRecord::from_bytes(data)
-        })
-        .collect::<Result<Vec<DNSRecord>, DNSError>>()?;
+        let answers = (0..header.num_answers)
+            .map(|_| DNSRecord::from_bytes(data))
+            .collect::<Result<Vec<DNSRecord>, DNSError>>()?;
+
+        let authorities = (0..header.num_authorities)
+            .map(|_| DNSRecord::from_bytes(data))
+            .collect::<Result<Vec<DNSRecord>, DNSError>>()?;
+
+        let additionals = (0..header.num_additionals)
+            .map(|_| DNSRecord::from_bytes(data))
+            .collect::<Result<Vec<DNSRecord>, DNSError>>()?;
 
         Ok(Self {
             header,
             answers,
             additionals,
             authorities,
-            questions
+            questions,
         })
     }
 }
-
 
 #[cfg(test)]
 pub fn lookup_domain(domain_name: &str) -> Result<String, DNSError> {
@@ -372,13 +343,15 @@ pub fn lookup_domain(domain_name: &str) -> Result<String, DNSError> {
     packet.answers[0].ip().ok_or(DNSError::NoIpAddressFound)
 }
 
-
 pub mod encode {
     use super::DNSError;
     use structure::byteorder::WriteBytesExt;
 
     /// Given a domain name encode it into bytes.
-    pub fn dns_name<W: std::io::Write>(writer: &mut W, domain_name: &str) -> Result<usize, DNSError> {
+    pub fn dns_name<W: std::io::Write>(
+        writer: &mut W,
+        domain_name: &str,
+    ) -> Result<usize, DNSError> {
         let mut total_bytes_written = 0;
 
         for part in domain_name.split('.') {
@@ -390,7 +363,6 @@ pub mod encode {
 
             writer.write_all(part_as_bytes)?;
             total_bytes_written += part_as_bytes.len();
-
         }
         writer.write_u8(0)?;
 
@@ -399,8 +371,8 @@ pub mod encode {
 }
 
 pub mod decode {
-    use std::io::{Read, Seek, SeekFrom};
     use super::DNSError;
+    use std::io::{Read, Seek, SeekFrom};
     use structure::byteorder::ReadBytesExt;
 
     pub fn dns_name_simple<R: Read>(reader: &mut R) -> Result<(String, usize), DNSError> {
@@ -425,7 +397,6 @@ pub mod decode {
     }
 
     pub fn dns_name<R: Read + Seek>(reader: &mut R) -> Result<(String, usize), DNSError> {
-
         let mut parts = vec![];
         let mut total_bytes_read: usize = 0;
 
@@ -446,7 +417,7 @@ pub mod decode {
                     total_bytes_read += bytes_read;
                     parts.push(part);
                     break;
-                },
+                }
                 false => {
                     let mut buf = vec![0; length as usize];
                     reader.read_exact(&mut buf)?;
@@ -460,9 +431,8 @@ pub mod decode {
 
     pub fn dns_name_compressed<R: Read + Seek>(
         reader: &mut R,
-        top_half: u8
+        top_half: u8,
     ) -> Result<(String, usize), DNSError> {
-
         let bottom_half = reader.read_u8()? as u16;
         let pointer: u16 = ((top_half as u16) << 8) | bottom_half;
         let current_position = reader.stream_position()?;

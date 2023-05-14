@@ -1,5 +1,5 @@
 use clap::Parser;
-use log::{debug, error, info};
+use log::{error, info};
 use rdns::{resolve, DNSError, DNSPacket, DNSQuery, FromBytes, ToBytes};
 use std::{io::Cursor, net::UdpSocket};
 

@@ -1,6 +1,6 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-use log::{info, trace, debug};
+use log::{trace, debug};
 
 use crate::dns::*;
 

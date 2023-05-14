@@ -4,41 +4,24 @@ use log::{info, debug, warn, trace, error};
 
 use crate::dns::*;
 
-pub fn build_query(domain_name: &str, record_type: DNSRecordType) -> DNSQuery {
-    let id: Int = rand::thread_rng().gen();
-    let header = DNSHeader {
-        id,
-        flags: DNSHeaderFlag::None,
-        num_answers: 0,
-        num_questions: 1,
-        num_additionals: 0,
-        num_authorities: 0
-    };
-
-    let query = DNSQuery {
-        header,
-        question: DNSQuestion { name: domain_name.to_string(), r#type: record_type, class: DNSRecordClass::IN }
-    };
-    query
-}
-
-pub fn resolve(domain_name: &str, record_type: DNSRecordType) -> Result<Ipv4Addr, DNSError> {
+pub fn resolve(domain_name: &str, record_type: DNSRecordType) -> Result<(DNSPacket, Ipv4Addr), DNSError> {
     let mut nameserver = "198.41.0.4:53".parse::<SocketAddr>()?;
 
     info!("Resolving {}", domain_name);
 
     loop {
         trace!("Querying {:?} for {}", nameserver, domain_name);
-        let query = build_query(domain_name, record_type);
+        let query = DNSQuery::new(domain_name, record_type, DNSRecordClass::IN, DNSHeaderFlag::None);
         let response = query.query(nameserver)?;
         
         if let Some(answer) = response.get_answer() {
-            return Ok(answer)
+            return Ok((response, answer))
         }
         if let Some(nameserver_ip) = response.get_nameserver_ip() {
             nameserver.set_ip(IpAddr::V4(nameserver_ip));
         } else if let Some(nameserver_domain) = response.get_nameserver() {
-            nameserver.set_ip(IpAddr::V4(resolve(&nameserver_domain, record_type)?));
+            let (_, resolved) = resolve(&nameserver_domain, record_type)?;
+            nameserver.set_ip(IpAddr::V4(resolved));
         } else {
             return Err(DNSError::Other)
         }

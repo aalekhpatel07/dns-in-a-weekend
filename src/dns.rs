@@ -61,6 +61,7 @@ pub enum DNSRecordType {
     // MF = 4,
     CNAME = 5,
     TXT = 16,
+    OPT = 41,
     // SOA = 6,
     // add more,
 }
@@ -74,6 +75,7 @@ impl TryFrom<Int> for DNSRecordType {
             5 => Ok(Self::CNAME),
             16 => Ok(Self::TXT),
             28 => Ok(Self::AAAA),
+            41 => Ok(Self::OPT),
             _ => Err(DNSError::BadRecordType(value)),
         }
     }
@@ -166,6 +168,18 @@ impl ToBytes for DNSQuery {
         total_bytes += self.question.to_bytes(writer)?;
 
         Ok(total_bytes)
+    }
+}
+
+
+impl FromBytes for DNSQuery {
+    type Error = DNSError;
+    fn from_bytes<R: Read + Seek>(reader: &mut R) -> Result<Self, Self::Error> {
+        
+        let header = DNSHeader::from_bytes(reader)?;
+        let question = DNSQuestion::from_bytes(reader)?;
+
+        Ok(Self { header, question })
     }
 }
 
@@ -264,6 +278,26 @@ pub struct DNSRecord {
     pub class: DNSRecordClass,
     pub ttl: u32,
     pub data: Vec<u8>,
+}
+
+
+impl ToBytes for DNSRecord {
+    fn to_bytes<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, DNSError> {
+        let mut total = 0;
+        total += encode::dns_name(writer, &self.name)?;
+
+        writer.write_u16::<BigEndian>(self.r#type as Int)?;
+        writer.write_u16::<BigEndian>(self.class as Int)?;
+        writer.write_u32::<BigEndian>(self.ttl)?;
+        writer.write_u16::<BigEndian>(self.data.len().try_into()?)?;
+
+        total += 10;
+        total += self.data.len();
+
+        writer.write_all(&self.data)?;
+
+        Ok(total)
+    }
 }
 
 impl core::fmt::Display for DNSRecord {
@@ -399,18 +433,33 @@ pub struct DNSPacket {
     pub additionals: Vec<DNSRecord>,
 }
 
+
+impl ToBytes for DNSPacket {
+    fn to_bytes<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, DNSError> {
+        let mut total_bytes_written = 0;
+        total_bytes_written += self.header.to_bytes(writer)?;
+        
+        for question in self.questions.iter() {
+            total_bytes_written += question.to_bytes(writer)?
+        }
+        for record in self.answers.iter() {
+            total_bytes_written += record.to_bytes(writer)?
+        }
+        for record in self.authorities.iter() {
+            total_bytes_written += record.to_bytes(writer)?
+        }
+        for record in self.additionals.iter() {
+            total_bytes_written += record.to_bytes(writer)?
+        }
+        Ok(total_bytes_written)
+    }
+}
+
 impl DNSPacket {
     pub fn ip(&self) -> Option<String> {
         self.answers.iter().find_map(|answer| {
             if answer.r#type == DNSRecordType::A {
-                Some(
-                    answer
-                        .data
-                        .iter()
-                        .map(|x| format!("{x}"))
-                        .collect::<Vec<_>>()
-                        .join("."),
-                )
+                answer.try_parse_a_record().map(|ip| ip.to_string()).ok()
             } else {
                 None
             }

@@ -235,16 +235,10 @@ fn test_lookup_domain(domain_name: &str, expected: &str) {
 
 
 #[test]
-fn test_query() {
-
-    let query = build_query("google.com", DNSRecordType::A);
-    let packet = query.query(("216.239.32.10", 53)).unwrap();
-    println!("{:#?}", packet.answers);
-    // println!("{:#?}", packet.answers[0].try_get_data_as_string());
-}
-
-#[test]
 fn test_resolve() {
-    let resolved = resolve("twitter.com", DNSRecordType::A).unwrap();
+    use simple_logger::init;
+    init().unwrap();
+
+    let resolved = resolve("facebook.com", DNSRecordType::A).unwrap();
     println!("{:#?}", resolved);
 }

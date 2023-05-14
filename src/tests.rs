@@ -53,10 +53,10 @@ fn test_dns_question_serde() {
 #[test]
 fn test_dns_query_new() {
     let query = DNSQuery::new(
-        "example.com", 
-        DNSRecordType::A, 
+        "example.com",
+        DNSRecordType::A,
         DNSRecordClass::IN,
-        DNSHeaderFlag::RecursionDesired
+        DNSHeaderFlag::RecursionDesired,
     );
 
     let mut observed = vec![];
@@ -70,7 +70,12 @@ fn test_dns_query_new() {
 
 #[test]
 fn test_dns_query_roundtrip() {
-    let query = DNSQuery::new("www.example.com", DNSRecordType::A, DNSRecordClass::IN, DNSHeaderFlag::RecursionDesired);
+    let query = DNSQuery::new(
+        "www.example.com",
+        DNSRecordType::A,
+        DNSRecordClass::IN,
+        DNSHeaderFlag::RecursionDesired,
+    );
     let response = query.send_to_8_8_8_8().unwrap();
     assert!(response.ends_with(&[93, 184, 216, 34]));
     let response = response.to_vec();
@@ -84,7 +89,12 @@ fn test_dns_query_roundtrip() {
 
 #[test]
 fn test_dns_query_record_parsing_roundtrip() {
-    let query = DNSQuery::new("www.example.com", DNSRecordType::A, DNSRecordClass::IN, DNSHeaderFlag::RecursionDesired);
+    let query = DNSQuery::new(
+        "www.example.com",
+        DNSRecordType::A,
+        DNSRecordClass::IN,
+        DNSHeaderFlag::RecursionDesired,
+    );
     let response = query.send_to_8_8_8_8().unwrap();
     assert!(response.ends_with(&[93, 184, 216, 34]));
     let response = response.to_vec();
@@ -94,7 +104,12 @@ fn test_dns_query_record_parsing_roundtrip() {
 
 #[test]
 fn test_dns_name_simple() {
-    let query = DNSQuery::new("www.example.com", DNSRecordType::A, DNSRecordClass::IN, DNSHeaderFlag::RecursionDesired);
+    let query = DNSQuery::new(
+        "www.example.com",
+        DNSRecordType::A,
+        DNSRecordClass::IN,
+        DNSHeaderFlag::RecursionDesired,
+    );
     let response = query.send_to_8_8_8_8().unwrap();
 
     let mut cursor = Cursor::new(&response[..]);
@@ -154,7 +169,12 @@ fn test_dns_record_parsing() {
 
 #[test]
 fn test_parse_dns_packet() {
-    let query = DNSQuery::new("www.example.com", DNSRecordType::A, DNSRecordClass::IN, DNSHeaderFlag::RecursionDesired);
+    let query = DNSQuery::new(
+        "www.example.com",
+        DNSRecordType::A,
+        DNSRecordClass::IN,
+        DNSHeaderFlag::RecursionDesired,
+    );
     let response = query.send_to_8_8_8_8().unwrap();
 
     let mut cursor = Cursor::new(&response[..]);
@@ -191,7 +211,12 @@ fn test_parse_dns_packet() {
 
 #[test]
 fn test_parse_dns_packet_metafilter() {
-    let query = DNSQuery::new("www.metafilter.com", DNSRecordType::A, DNSRecordClass::IN, DNSHeaderFlag::RecursionDesired);
+    let query = DNSQuery::new(
+        "www.metafilter.com",
+        DNSRecordType::A,
+        DNSRecordClass::IN,
+        DNSHeaderFlag::RecursionDesired,
+    );
     let response = query.send_to_8_8_8_8().unwrap();
 
     let mut cursor = Cursor::new(&response[..]);
@@ -232,7 +257,6 @@ fn test_lookup_domain(domain_name: &str, expected: &str) {
     let observed = lookup_domain(domain_name).unwrap();
     assert_eq!(observed, expected.to_string());
 }
-
 
 #[test]
 fn test_resolve() {

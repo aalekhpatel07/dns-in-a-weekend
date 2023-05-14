@@ -1,15 +1,5 @@
-use std::io::{
-    Cursor,
-    Read,
-    Seek
-};
-use std::net::{
-    AddrParseError,
-    Ipv4Addr,
-    Ipv6Addr,
-    ToSocketAddrs,
-    UdpSocket
-};
+use std::io::{Cursor, Read, Seek};
+use std::net::{AddrParseError, Ipv4Addr, Ipv6Addr, ToSocketAddrs, UdpSocket};
 use std::num::TryFromIntError;
 use std::string::FromUtf8Error;
 
@@ -125,7 +115,7 @@ pub enum DNSError {
     #[error("ToSocketAddrs produced no addresses when at least one was expected.")]
     ToSocketAddrsProducedNoAddrs,
     #[error("Something went wrong.")]
-    Other
+    Other,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -171,11 +161,9 @@ impl ToBytes for DNSQuery {
     }
 }
 
-
 impl FromBytes for DNSQuery {
     type Error = DNSError;
     fn from_bytes<R: Read + Seek>(reader: &mut R) -> Result<Self, Self::Error> {
-        
         let header = DNSHeader::from_bytes(reader)?;
         let question = DNSQuestion::from_bytes(reader)?;
 
@@ -233,12 +221,10 @@ impl DNSQuery {
     }
 
     pub fn query(&self, addr: impl ToSocketAddrs) -> Result<DNSPacket, DNSError> {
-
         let mut contents = vec![];
         self.to_bytes(&mut contents)?;
 
-        let recipient = 
-            addr
+        let recipient = addr
             .to_socket_addrs()?
             .next()
             .ok_or(DNSError::ToSocketAddrsProducedNoAddrs)?;
@@ -280,7 +266,6 @@ pub struct DNSRecord {
     pub data: Vec<u8>,
 }
 
-
 impl ToBytes for DNSRecord {
     fn to_bytes<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, DNSError> {
         let mut total = 0;
@@ -308,35 +293,28 @@ impl core::fmt::Display for DNSRecord {
 
 impl core::fmt::Debug for DNSRecord {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-
-        f
-        .debug_struct("DNSRecord")
-        .field("name", &self.name)
-        .field("type", &self.r#type)
-        .field("class", &self.class)
-        .field("ttl", &self.ttl)
-        .field(
-            "data", 
-            &self.try_get_data_as_string()
-        )
-        .finish()
+        f.debug_struct("DNSRecord")
+            .field("name", &self.name)
+            .field("type", &self.r#type)
+            .field("class", &self.class)
+            .field("ttl", &self.ttl)
+            .field("data", &self.try_get_data_as_string())
+            .finish()
     }
 }
 
 impl DNSRecord {
-
-
     fn try_parse_aaaa_record(&self) -> Result<Ipv6Addr, DNSError> {
         let mut cursor = Cursor::new(&self.data);
         let ipv6 = Ipv6Addr::new(
-        cursor.read_u16::<BigEndian>()?,
-        cursor.read_u16::<BigEndian>()?,
-        cursor.read_u16::<BigEndian>()?,
-        cursor.read_u16::<BigEndian>()?,
-        cursor.read_u16::<BigEndian>()?,
-        cursor.read_u16::<BigEndian>()?,
-        cursor.read_u16::<BigEndian>()?,
-        cursor.read_u16::<BigEndian>()?,
+            cursor.read_u16::<BigEndian>()?,
+            cursor.read_u16::<BigEndian>()?,
+            cursor.read_u16::<BigEndian>()?,
+            cursor.read_u16::<BigEndian>()?,
+            cursor.read_u16::<BigEndian>()?,
+            cursor.read_u16::<BigEndian>()?,
+            cursor.read_u16::<BigEndian>()?,
+            cursor.read_u16::<BigEndian>()?,
         );
         Ok(ipv6)
     }
@@ -353,19 +331,19 @@ impl DNSRecord {
 
     pub fn try_get_data_as_string(&self) -> Option<String> {
         match self.r#type {
-            DNSRecordType::A => {
-                self.try_parse_a_record().map(|record| record.to_string()).ok()
-            },
+            DNSRecordType::A => self
+                .try_parse_a_record()
+                .map(|record| record.to_string())
+                .ok(),
             DNSRecordType::NS => {
                 let mut cursor = Cursor::new(&self.data);
                 decode::dns_name(&mut cursor).map(|(name, _)| name).ok()
-            },
-            DNSRecordType::AAAA => {
-                self.try_parse_aaaa_record().map(|record| record.to_string()).ok()
             }
-            _ => {
-                Some(format!("{:?}", self.data))
-            }
+            DNSRecordType::AAAA => self
+                .try_parse_aaaa_record()
+                .map(|record| record.to_string())
+                .ok(),
+            _ => Some(format!("{:?}", self.data)),
         }
     }
 }
@@ -433,12 +411,11 @@ pub struct DNSPacket {
     pub additionals: Vec<DNSRecord>,
 }
 
-
 impl ToBytes for DNSPacket {
     fn to_bytes<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, DNSError> {
         let mut total_bytes_written = 0;
         total_bytes_written += self.header.to_bytes(writer)?;
-        
+
         for question in self.questions.iter() {
             total_bytes_written += question.to_bytes(writer)?
         }
@@ -467,72 +444,52 @@ impl DNSPacket {
     }
 
     pub(crate) fn get_nameserver_from_authorities(&self) -> Option<String> {
-        self
-        .authorities
-        .iter()
-        .find_map(
-            |answer| 
-            match answer.r#type == DNSRecordType::NS {
+        self.authorities
+            .iter()
+            .find_map(|answer| match answer.r#type == DNSRecordType::NS {
                 true => {
                     let mut cursor = Cursor::new(&answer.data);
                     Some(decode::dns_name(&mut cursor).map(|(name, _)| name).unwrap())
-                },
-                false => None
-            }
-        )
+                }
+                false => None,
+            })
     }
-
 
     pub(crate) fn get_nameserver_from_additionals(&self) -> Option<String> {
-        self
-        .additionals
-        .iter()
-        .find_map(
-            |answer| 
-            match answer.r#type == DNSRecordType::NS {
+        self.additionals
+            .iter()
+            .find_map(|answer| match answer.r#type == DNSRecordType::NS {
                 true => {
                     let mut cursor = Cursor::new(&answer.data);
                     Some(decode::dns_name(&mut cursor).map(|(name, _)| name).unwrap())
-                },
-                false => None
-            }
-        )
+                }
+                false => None,
+            })
     }
 
-
     pub(crate) fn get_nameserver(&self) -> Option<String> {
-
         if let Some(result) = self.get_nameserver_from_authorities() {
             return Some(result);
         }
         self.get_nameserver_from_additionals()
     }
 
-
     pub fn get_nameserver_ip(&self) -> Option<Ipv4Addr> {
-        self
-        .additionals
-        .iter()
-        .find_map(
-            |answer| 
-            match answer.r#type == DNSRecordType::A {
+        self.additionals
+            .iter()
+            .find_map(|answer| match answer.r#type == DNSRecordType::A {
                 true => answer.try_parse_a_record().ok(),
-                false => None
-            }
-        )
+                false => None,
+            })
     }
 
     pub fn get_answer(&self) -> Option<Ipv4Addr> {
-        self
-        .answers
-        .iter()
-        .find_map(
-            |answer| 
-            match answer.r#type == DNSRecordType::A {
+        self.answers
+            .iter()
+            .find_map(|answer| match answer.r#type == DNSRecordType::A {
                 true => answer.try_parse_a_record().ok(),
-                false => None
-            }
-        )
+                false => None,
+            })
     }
 }
 
@@ -569,7 +526,12 @@ impl FromBytes for DNSPacket {
 
 #[cfg(test)]
 pub fn lookup_domain(domain_name: &str) -> Result<String, DNSError> {
-    let query = DNSQuery::new(domain_name, DNSRecordType::A, DNSRecordClass::IN, DNSHeaderFlag::RecursionDesired);
+    let query = DNSQuery::new(
+        domain_name,
+        DNSRecordType::A,
+        DNSRecordClass::IN,
+        DNSHeaderFlag::RecursionDesired,
+    );
     let response = query.send_to_8_8_8_8()?;
     let mut reader = std::io::Cursor::new(response);
     let packet = DNSPacket::from_bytes(&mut reader)?;

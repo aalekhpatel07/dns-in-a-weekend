@@ -1,16 +1,20 @@
 [package]
-name = "rdns"
+name = "dns_in_a_weekend"
 version = "0.1.0"
 edition = "2021"
-
+readme-file = "./README.md"
+authors = ["Aalekh Patel <aalekh.gwpeck.7998@icloud.com>"]
+license-file = "./LICENSE"
 
 [profile.release]
 lto = "fat"
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# for cli arg parsing in the main server binary.
 clap = { version = "4.2.7", features = ["derive", "env"] }
+# for capturing logs in the main server binary.
 env_logger = "0.10.0"
+# for emitting logs.
 log = "0.4.17"
 # to generate ids for dns headers.
 rand = { version = "0.8.5" }

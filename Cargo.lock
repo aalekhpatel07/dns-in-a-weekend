@@ -117,7 +117,7 @@ dependencies = [
  "heck",
  "proc-macro2",
  "quote 1.0.27",
- "syn 2.0.15",
+ "syn 2.0.16",
 ]
 
 [[package]]
@@ -131,6 +131,19 @@ name = "colorchoice"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
+
+[[package]]
+name = "dns_in_a_weekend"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "env_logger",
+ "log",
+ "rand",
+ "structure",
+ "test-case",
+ "thiserror",
+]
 
 [[package]]
 name = "env_logger"
@@ -351,19 +364,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rdns"
-version = "0.1.0"
-dependencies = [
- "clap",
- "env_logger",
- "log",
- "rand",
- "structure",
- "test-case",
- "thiserror",
-]
-
-[[package]]
 name = "regex"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -434,9 +434,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.15"
+version = "2.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a34fcf3e8b60f57e6a14301a2e916d323af98b0ea63c599441eec8558660c822"
+checksum = "a6f671d4b5ffdb8eadec19c0ae67fe2639df8684bd7bc4b83d986b8db549cf01"
 dependencies = [
  "proc-macro2",
  "quote 1.0.27",
@@ -504,7 +504,7 @@ checksum = "f9456a42c5b0d803c8cd86e73dd7cc9edd429499f37a3550d286d5e86720569f"
 dependencies = [
  "proc-macro2",
  "quote 1.0.27",
- "syn 2.0.15",
+ "syn 2.0.16",
 ]
 
 [[package]]

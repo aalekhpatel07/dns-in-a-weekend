@@ -5,6 +5,9 @@ edition = "2021"
 readme-file = "./README.md"
 authors = ["Aalekh Patel <aalekh.gwpeck.7998@icloud.com>"]
 license-file = "./LICENSE"
+description = "A toy implementation of a DNS server that implements caching."
+homepage = "https://github.com/aalekhpatel07/rdns"
+repository = "https://github.com/aalekhpatel07/rdns"
 
 [profile.release]
 lto = "fat"

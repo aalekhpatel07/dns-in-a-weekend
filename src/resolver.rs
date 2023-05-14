@@ -1,6 +1,6 @@
-use std::{io::{Write, Seek}, net::{Ipv4Addr, SocketAddr, IpAddr}};
-use rand::Rng;
-use log::{info, debug, warn, trace, error};
+use std::{net::{Ipv4Addr, SocketAddr, IpAddr}};
+
+use log::{info, trace};
 
 use crate::dns::*;
 

@@ -250,7 +250,7 @@ impl DNSQuery {
         let (size, _) = socket.recv_from(&mut recv_buf)?;
         let mut cursor = std::io::Cursor::new(&recv_buf[0..size]);
 
-        Ok(DNSPacket::from_bytes(&mut cursor)?)
+        DNSPacket::from_bytes(&mut cursor)
     }
 
     #[cfg(test)]

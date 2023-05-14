@@ -1,13 +1,11 @@
 use std::{net::{
-    SocketAddr,
-    UdpSocket,
-    ToSocketAddrs, Ipv4Addr
+    UdpSocket
 }, io::Cursor};
 use clap::Parser;
 use rdns::{
     resolve, DNSError, DNSPacket, FromBytes, DNSQuery, ToBytes
 };
-use log::{error, info, debug};
+use log::{error, debug};
 
 #[derive(Debug, Parser)]
 pub struct Opts {

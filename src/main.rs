@@ -1,5 +1,5 @@
 use clap::Parser;
-use log::{debug, error};
+use log::{debug, error, info};
 use rdns::{resolve, DNSError, DNSPacket, DNSQuery, FromBytes, ToBytes};
 use std::{io::Cursor, net::UdpSocket};
 
@@ -12,6 +12,7 @@ pub struct Opts {
 pub fn handle_datagram(mut message: Cursor<Vec<u8>>) -> Result<DNSPacket, DNSError> {
     let query = DNSQuery::from_bytes(&mut message)?;
     let query_id = query.header.id;
+    info!("Resolving {}", query.question.name);
     let (mut packet, _) = resolve(&query.question.name, query.question.r#type)?;
     packet.header.id = query_id;
     Ok(packet)
@@ -28,7 +29,7 @@ pub fn start_server(socket: UdpSocket) -> Result<(), Box<dyn std::error::Error>>
                 let mut writer = Vec::new();
                 packet.to_bytes(&mut writer).unwrap();
                 socket_cp.send_to(&writer, sender).unwrap();
-                debug!(
+                info!(
                     "Found IP: {:#?} for {} requested by {}",
                     packet.ip(),
                     packet.questions[0].name,
@@ -44,7 +45,7 @@ pub fn start_server(socket: UdpSocket) -> Result<(), Box<dyn std::error::Error>>
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opts = Opts::parse();
-    simple_logger::init()?;
+    env_logger::init();
 
     let socket = UdpSocket::bind(("0.0.0.0", opts.port))?;
 

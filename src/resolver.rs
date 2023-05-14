@@ -1,6 +1,6 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-use log::{info, trace};
+use log::{info, trace, debug};
 
 use crate::dns::*;
 
@@ -10,7 +10,7 @@ pub fn resolve(
 ) -> Result<(DNSPacket, Ipv4Addr), DNSError> {
     let mut nameserver = "198.41.0.4:53".parse::<SocketAddr>()?;
 
-    info!("Resolving {}", domain_name);
+    debug!("Resolving {}", domain_name);
 
     loop {
         trace!("Querying {:?} for {}", nameserver, domain_name);

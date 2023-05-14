@@ -10,10 +10,10 @@ lto = "fat"
 
 [dependencies]
 clap = { version = "4.2.7", features = ["derive", "env"] }
+env_logger = "0.10.0"
 log = "0.4.17"
 # to generate ids for dns headers.
 rand = { version = "0.8.5" }
-simple_logger = { version = "4.1.0", features = ["stderr"] }
 # for serde needs.
 structure = "0.1.2"
 # nicer error handling.

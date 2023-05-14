@@ -260,8 +260,8 @@ fn test_lookup_domain(domain_name: &str, expected: &str) {
 
 #[test]
 fn test_resolve() {
-    use simple_logger::init;
-    init().unwrap();
+    use env_logger::init;
+    init();
 
     let resolved = resolve("facebook.com", DNSRecordType::A).unwrap();
     println!("{:#?}", resolved);

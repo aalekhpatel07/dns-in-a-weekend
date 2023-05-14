@@ -1,7 +1,7 @@
 use clap::Parser;
-use log::{error, info};
 use dns_in_a_weekend::{resolve, DNSError, DNSPacket, DNSQuery, FromBytes, ToBytes};
-use std::{io::Cursor, net::UdpSocket, collections::HashMap};
+use log::{error, info};
+use std::{collections::HashMap, io::Cursor, net::UdpSocket};
 
 #[derive(Debug, Parser)]
 pub struct Opts {
@@ -12,7 +12,10 @@ pub struct Opts {
 pub type Shared<T> = std::sync::Arc<std::sync::Mutex<T>>;
 pub type Database = Shared<std::collections::HashMap<String, DNSPacket>>;
 
-pub fn handle_datagram(mut message: Cursor<Vec<u8>>, cache: Database) -> Result<DNSPacket, DNSError> {
+pub fn handle_datagram(
+    mut message: Cursor<Vec<u8>>,
+    cache: Database,
+) -> Result<DNSPacket, DNSError> {
     let query = DNSQuery::from_bytes(&mut message)?;
     let query_id = query.header.id;
     info!("Resolving {}", query.question.name);
@@ -22,12 +25,15 @@ pub fn handle_datagram(mut message: Cursor<Vec<u8>>, cache: Database) -> Result<
         // some packet is stored.
         // just update ids and send it back.
         let mut packet_cp = packet.clone();
-        info!("looked up {} from cache (packet: {:#?})", query.question.name, packet_cp);
+        info!(
+            "looked up {} from cache (packet: {:#?})",
+            query.question.name, packet_cp
+        );
         packet_cp.header.id = query_id;
-        return Ok(packet_cp)
+        return Ok(packet_cp);
     }
 
-    let (mut packet, _) = resolve(&query.question.name, query.question.r#type)?;    
+    let (mut packet, _) = resolve(&query.question.name, query.question.r#type)?;
     cache_guard.insert(query.question.name, packet.clone());
     packet.header.id = query_id;
     Ok(packet)

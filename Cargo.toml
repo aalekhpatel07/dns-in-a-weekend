@@ -1,8 +1,8 @@
 [package]
 name = "dns_in_a_weekend"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
-readme-file = "./README.md"
+readme = "./README.md"
 authors = ["Aalekh Patel <aalekh.gwpeck.7998@icloud.com>"]
 license-file = "./LICENSE"
 description = "A toy implementation of a DNS server that implements caching."
@@ -11,6 +11,10 @@ repository = "https://github.com/aalekhpatel07/rdns"
 
 [profile.release]
 lto = "fat"
+
+[[bin]]
+path = "src/main.rs"
+name = "dns-in-a-weekend"
 
 [dependencies]
 # for cli arg parsing in the main server binary.

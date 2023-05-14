@@ -9,6 +9,7 @@ lto = "fat"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+log = "0.4.17"
 # to generate ids for dns headers.
 rand = { version = "0.8.5" }
 # for serde needs.

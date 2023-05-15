@@ -7,7 +7,7 @@ use rand::prelude::*;
 use rand::thread_rng;
 use structure::byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use thiserror::Error;
-use log::{debug};
+
 
 pub type Int = u16;
 
@@ -498,7 +498,7 @@ impl DNSPacket {
                     }
                     answer
                     .try_parse_aaaa_record()
-                    .map(|aaaa_record| IpAddr::V6(aaaa_record))
+                    .map(IpAddr::V6)
                     .ok()
                 },
                 false => None,
@@ -515,7 +515,7 @@ impl DNSPacket {
                     }
                     answer
                     .try_parse_aaaa_record()
-                    .map(|aaaa_record| IpAddr::V6(aaaa_record))
+                    .map(IpAddr::V6)
                     .ok()
                 },
                 false => None,

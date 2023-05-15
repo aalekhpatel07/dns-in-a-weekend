@@ -1,5 +1,5 @@
 use std::io::{Cursor, Read, Seek};
-use std::net::{AddrParseError, Ipv4Addr, Ipv6Addr, ToSocketAddrs, UdpSocket};
+use std::net::{AddrParseError, Ipv4Addr, Ipv6Addr, ToSocketAddrs, UdpSocket, IpAddr};
 use std::num::TryFromIntError;
 use std::string::FromUtf8Error;
 
@@ -7,6 +7,7 @@ use rand::prelude::*;
 use rand::thread_rng;
 use structure::byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use thiserror::Error;
+use log::{debug};
 
 pub type Int = u16;
 
@@ -52,7 +53,7 @@ pub enum DNSRecordType {
     CNAME = 5,
     TXT = 16,
     OPT = 41,
-    // SOA = 6,
+    SOA = 6,
     // add more,
 }
 
@@ -63,6 +64,7 @@ impl TryFrom<Int> for DNSRecordType {
             1 => Ok(Self::A),
             2 => Ok(Self::NS),
             5 => Ok(Self::CNAME),
+            6 => Ok(Self::SOA),
             16 => Ok(Self::TXT),
             28 => Ok(Self::AAAA),
             41 => Ok(Self::OPT),
@@ -335,10 +337,10 @@ impl DNSRecord {
                 .try_parse_a_record()
                 .map(|record| record.to_string())
                 .ok(),
-            DNSRecordType::NS => {
+            DNSRecordType::NS | DNSRecordType::CNAME => {
                 let mut cursor = Cursor::new(&self.data);
                 decode::dns_name(&mut cursor).map(|(name, _)| name).ok()
-            }
+            },
             DNSRecordType::AAAA => self
                 .try_parse_aaaa_record()
                 .map(|record| record.to_string())
@@ -474,20 +476,48 @@ impl DNSPacket {
         self.get_nameserver_from_additionals()
     }
 
-    pub fn get_nameserver_ip(&self) -> Option<Ipv4Addr> {
+    pub(crate) fn get_cname_record(&self) -> Option<String> {
+        self.answers
+            .iter()
+            .find_map(|answer| match answer.r#type == DNSRecordType::CNAME {
+                true => {
+                    let mut cursor = Cursor::new(&answer.data);
+                    Some(decode::dns_name(&mut cursor).map(|(name, _)| name).unwrap())
+                },
+                false => None
+            })
+    }
+
+    pub fn get_nameserver_ip(&self) -> Option<IpAddr> {
         self.additionals
             .iter()
             .find_map(|answer| match answer.r#type == DNSRecordType::A {
-                true => answer.try_parse_a_record().ok(),
+                true => {
+                    if let Ok(a_record) = answer.try_parse_a_record() {
+                        return Some(IpAddr::V4(a_record));
+                    }
+                    answer
+                    .try_parse_aaaa_record()
+                    .map(|aaaa_record| IpAddr::V6(aaaa_record))
+                    .ok()
+                },
                 false => None,
             })
     }
 
-    pub fn get_answer(&self) -> Option<Ipv4Addr> {
+    pub fn get_answer(&self) -> Option<IpAddr> {
         self.answers
             .iter()
             .find_map(|answer| match answer.r#type == DNSRecordType::A {
-                true => answer.try_parse_a_record().ok(),
+                true => {
+                    if let Ok(a_record) = answer.try_parse_a_record() {
+                        return Some(IpAddr::V4(a_record));
+                    }
+                    answer
+                    .try_parse_aaaa_record()
+                    .map(|aaaa_record| IpAddr::V6(aaaa_record))
+                    .ok()
+                },
                 false => None,
             })
     }

@@ -267,17 +267,20 @@ fn test_resolve() {
     println!("{:#?}", resolved);
 }
 
-
 #[test]
-fn foo () {
+fn foo() {
     let record = DNSRecord {
         r#type: DNSRecordType::CNAME,
         name: "visit-before.wizard107.messwithdns.com".to_string(),
         class: DNSRecordClass::IN,
         ttl: 100,
-        data: vec![6, 111, 114, 97, 110, 103, 101, 4, 106, 118, 110, 115, 2, 99, 97, 0]
+        data: vec![
+            6, 111, 114, 97, 110, 103, 101, 4, 106, 118, 110, 115, 2, 99, 97, 0,
+        ],
     };
 
-    assert_eq!(record.try_get_data_as_string(), Some("orange.jvns.ca".to_string()));
-
+    assert_eq!(
+        record.try_get_data_as_string(),
+        Some("orange.jvns.ca".to_string())
+    );
 }

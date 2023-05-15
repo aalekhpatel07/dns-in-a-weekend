@@ -1,5 +1,5 @@
 use std::io::{Cursor, Read, Seek};
-use std::net::{AddrParseError, Ipv4Addr, Ipv6Addr, ToSocketAddrs, UdpSocket, IpAddr};
+use std::net::{AddrParseError, IpAddr, Ipv4Addr, Ipv6Addr, ToSocketAddrs, UdpSocket};
 use std::num::TryFromIntError;
 use std::string::FromUtf8Error;
 
@@ -7,7 +7,6 @@ use rand::prelude::*;
 use rand::thread_rng;
 use structure::byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use thiserror::Error;
-
 
 pub type Int = u16;
 
@@ -340,7 +339,7 @@ impl DNSRecord {
             DNSRecordType::NS | DNSRecordType::CNAME => {
                 let mut cursor = Cursor::new(&self.data);
                 decode::dns_name(&mut cursor).map(|(name, _)| name).ok()
-            },
+            }
             DNSRecordType::AAAA => self
                 .try_parse_aaaa_record()
                 .map(|record| record.to_string())
@@ -483,8 +482,8 @@ impl DNSPacket {
                 true => {
                     let mut cursor = Cursor::new(&answer.data);
                     Some(decode::dns_name(&mut cursor).map(|(name, _)| name).unwrap())
-                },
-                false => None
+                }
+                false => None,
             })
     }
 
@@ -496,11 +495,8 @@ impl DNSPacket {
                     if let Ok(a_record) = answer.try_parse_a_record() {
                         return Some(IpAddr::V4(a_record));
                     }
-                    answer
-                    .try_parse_aaaa_record()
-                    .map(IpAddr::V6)
-                    .ok()
-                },
+                    answer.try_parse_aaaa_record().map(IpAddr::V6).ok()
+                }
                 false => None,
             })
     }
@@ -513,11 +509,8 @@ impl DNSPacket {
                     if let Ok(a_record) = answer.try_parse_a_record() {
                         return Some(IpAddr::V4(a_record));
                     }
-                    answer
-                    .try_parse_aaaa_record()
-                    .map(IpAddr::V6)
-                    .ok()
-                },
+                    answer.try_parse_aaaa_record().map(IpAddr::V6).ok()
+                }
                 false => None,
             })
     }

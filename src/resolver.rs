@@ -1,6 +1,6 @@
 use std::net::{IpAddr, SocketAddr};
 
-use log::{debug, trace, error};
+use log::{debug, error, trace};
 
 use crate::dns::*;
 
@@ -33,8 +33,7 @@ pub fn resolve(
         } else if let Some(cname_domain) = response.get_cname_record() {
             let (_, resolved) = resolve(&cname_domain, record_type)?;
             nameserver.set_ip(resolved);
-        }
-        else {
+        } else {
             error!(
                 "Couldn't find any of A/AAAA/NS/CNAME records. {:#?}",
                 response
